@@ -381,9 +381,13 @@ class GtpConnection:
         move_as_string = format_point(move_coord)
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
-    def timelimit_cmd(self, args: List[str]) -> None:
+    def timelimit_cmd(self,second):
         """ Implement this function for Assignment 2 """
-        pass
+        if (1<= second <= 100):
+            self.second = int(second)
+        else:
+            self.respond("make it faster")
+            
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
