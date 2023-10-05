@@ -388,6 +388,7 @@ class GtpConnection:
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         pass
+    
 
     """
     ==========================================================================
