@@ -31,7 +31,25 @@ class Go0(GoEngine):
         A2: Implement your search algorithm to solve a board
         Change if deemed necessary
         """
-        pass
+        # psuedo code below
+        '''
+        i = 0
+        if the game is not over
+            get all open and legal  moves of the board
+            while the game is not over
+                call board.play_move(all moves, need to get current player color)
+                i +=1
+        return winner, i (winner = color that won, i = position)
+        '''
+        # actual code
+        i = 0
+        if not self.board.end_of_game():
+            allMoves = self.board.get_empty_points()
+            random.shuffle(allMoves)
+            while not self.board.end_of_game():
+                self.board.play_move(allMoves(i), self.board_base.is_black_white)
+                i += 1
+        return winner(), i
 
 
 def run() -> None:
