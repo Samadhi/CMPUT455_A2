@@ -31,26 +31,51 @@ class Go0(GoEngine):
         A2: Implement your search algorithm to solve a board
         Change if deemed necessary
         """
-        # psuedo code below
-        '''
-        i = 0
-        if the game is not over
-            get all open and legal  moves of the board
-            while the game is not over
-                call board.play_move(all moves, need to get current player color)
-                i +=1
-        return winner, i (winner = color that won, i = position)
-        '''
-        # actual code
-        i = 0
-        if not self.board.end_of_game():
-            allMoves = self.board.get_empty_points()
-            random.shuffle(allMoves)
-            while not self.board.end_of_game():
-                self.board.play_move(allMoves(i), self.board_base.is_black_white)
-                i += 1
-        return winner(), i
+        # psuedo code below, is a recursive alpha beta negamax function
+        call the alphabeta function to solve
+    
+    def alphabeta(state, alpha, beta)
+        if reached end of game state:
+                return staticallyEvaluateForToPlay() --> honestly not completely                    sure what this function does i think it says who won 
+        if game is still going:
+            do a for loop for all legal moves from current state
+                play each legal move
+                value = -solve()
+                if value > alpha
+                    alpha = value
+                undo the move
+                if value >= beta:
+                    return value
+        # think we will need function to reset the moves completely in case
+        # we run out of time
+        return alpha
+    
+    #need staticallyEvaluateForToPlay() function
+    #    assign variable to winner
+    #    make sure that winner is current player
+    #    if winner is not black or white
+    #        if it is the end of the game return 0 --> tie
+    #            else return 1 --> we won
+    #    else return -10 --> loss
 
+    #need winner function
+    #    returns who won
+
+    # need undo all moves functions
+    #   calculate the number of undo moves needed would need to track of moves      #       simulated
+    #   make sure the number of undos >= 0
+    #   do a loop that calls the undo function
+
+    #need undo function
+    #    would need to have a list of all the moves played on the board
+    #    get the last move put into the board (use pop())
+    #    assign the location where we just pop the move to empty
+    #    then switch player 
+
+    #need end of game function --> call board.py end of game function
+
+    #need play function --> call board.py play_move but would need to know 
+    #    current color
 
 def run() -> None:
     """
