@@ -11,6 +11,7 @@ at the University of Edinburgh.
 import traceback
 import numpy as np
 import re
+import operator
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
 
@@ -387,8 +388,33 @@ class GtpConnection:
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
-        pass
-    
+        color = self.board.current_player
+
+        moves = self.board.get_empty_points()
+        ordered_moves_dict = self.order_moves(color, moves)
+        print(ordered_moves_dict)
+
+        # result = 
+
+    # orders all available moves based on heuristic
+    def order_moves(self, color: GO_COLOR, moves: np.ndarray):
+        moves_dict = dict()
+
+        # for move in moves:
+        #     score = self.board.heuristic_of_points(move)
+        #     moves_dict[move] = score
+
+        five_in_row_list = self.board.heuristic_five_in_a_row(color)
+        if len(five_in_row_list) > 0:
+            print("5 in a row found")
+            for move in five_in_row_list:
+                moves_dict[move] = 100
+        else:
+            for move in moves:
+                moves_dict[move] = 0
+                
+        sorted_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
+        return sorted_moves_dict
 
     """
     ==========================================================================

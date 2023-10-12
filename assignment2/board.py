@@ -327,6 +327,17 @@ class GoBoard(object):
                     self.white_captures += 2
         return True
     
+    def heuristic_of_points(self, point: GO_POINT, color: GO_COLOR):
+        O = opponent(color)
+        offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
+        for offset in offsets:
+            if len(self.neighbors_of_color(point, EMPTY)):
+                print("no neighbors")
+                return 0
+            elif self.board[point+offset] == O and self.board[point+(offset*2)] == O and self.board[point+(offset*3)] == EMPTY:
+                print("capture")
+                return 1
+
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
         """ List of neighbors of point of given color """
         nbc: List[GO_POINT] = []
@@ -393,3 +404,43 @@ class GoBoard(object):
             if counter == 5 and prev != EMPTY:
                 return prev
         return EMPTY
+    
+    def heuristic_five_in_a_row(self, color: GO_COLOR) -> list:
+        """
+        Check if there is almost a 5 in row on the board. If so, append that point and color to a list and return that list
+        """
+        points = []
+
+        for r in self.rows:
+            print("r: ", r)
+            result = self.almost_five_in_list(r)
+            if result[0] != EMPTY and result[1] == color:
+                points.append(result[0])
+        for c in self.cols:
+            print("c: ", c)
+            result = self.almost_five_in_list(c)
+            if result[0] != EMPTY and result[1] == color:
+                points.append(result[0])
+        for d in self.diags:
+            print("d: ", d)
+            result = self.almost_five_in_list(d)
+            if result[0] != EMPTY and result[1] == color:
+                points.append(result[0])
+        return points
+
+    def almost_five_in_list(self, list) -> (GO_POINT, GO_COLOR):
+        prev = BORDER
+        counter = 1
+        for stone in list:
+            if self.get_color(stone) == prev and counter != 4:
+                print("neighbor", stone, counter)
+                counter += 1
+            else:
+                print(counter, prev)
+                counter = 1
+            if counter == 4 and prev != EMPTY: #and self.get_color(stone) == EMPTY:
+                    print(self.get_color(stone))
+                    print("detected 4 in a row, implement remembering of move?")
+                    return stone, prev
+            prev = self.get_color(stone)
+        return EMPTY, prev
