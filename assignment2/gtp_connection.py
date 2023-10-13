@@ -11,6 +11,7 @@ at the University of Edinburgh.
 import traceback
 import numpy as np
 import re
+import time
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
 
@@ -381,12 +382,22 @@ class GtpConnection:
         move_as_string = format_point(move_coord)
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
-    def timelimit_cmd(self,second):
+    def timelimit_cmd(self):
         """ Implement this function for Assignment 2 """
-        if (1<= second <= 100):
-            self.second = int(second)
-            self.respond("make it faster")
-            
+        
+        max_time = 10
+        start_time = time.time()
+        answer = input("enter your name and question")
+        end_time = time.time()
+        total_time = end_time - start_time
+        if total_time < 10:
+            print("not bad")
+        elif total_time < 5:
+            print("good job")
+        elif total_time > 10:
+            print("time limit exceeded")
+        print ('total_time')
+        
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
