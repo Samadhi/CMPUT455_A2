@@ -385,7 +385,6 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         if (1<= second <= 100):
             self.second = int(second)
-        else:
             self.respond("make it faster")
             
 
