@@ -387,16 +387,19 @@ class GtpConnection:
         
         max_time = 10
         start_time = time.time()
-        answer = input("enter your name and question")
-        end_time = time.time()
-        total_time = end_time - start_time
-        if total_time < 10:
-            print("not bad")
-        elif total_time < 5:
-            print("good job")
-        elif total_time > 10:
-            print("time limit exceeded")
-        print ('total_time')
+
+        while start_time < 10:
+            print(start_time)
+        # answer = input("enter your name and question")
+        # end_time = time.time()
+        # total_time = end_time - start_time
+        # if total_time < 10:
+        #     print("not bad")
+        # elif total_time < 5:
+        #     print("good job")
+        # elif total_time > 10:
+        #     print("time limit exceeded")
+        # print ('total_time')
         
 
     def solve_cmd(self, args: List[str]) -> None:
