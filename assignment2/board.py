@@ -141,6 +141,7 @@ class GoBoard(object):
         self.calculate_rows_cols_diags()
         self.black_captures = 0
         self.white_captures = 0
+        self.moves = [] # put in for solve
 
     def copy(self) -> 'GoBoard':
         b = GoBoard(self.size)
@@ -325,6 +326,7 @@ class GoBoard(object):
                     self.black_captures += 2
                 else:
                     self.white_captures += 2
+        self.moves.append(point)
         return True
     
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
@@ -393,3 +395,30 @@ class GoBoard(object):
             if counter == 5 and prev != EMPTY:
                 return prev
         return EMPTY
+
+    # functions for solve
+
+    def staticallyEvaluateForToPlay(self):
+        win_color = self.winner()
+        assert win_color != GO_COLOR
+        if win_color == EMPTY:
+            if self.board.end_of_game(): return 0
+            else: return 1
+        else: return -10
+
+    def winner(self):
+        if self.gtp_connection.gogui_rules_final_result_cmd() == 'black':
+            return BLACK
+        if self.gtp_connection.gogui_rules_final_result_cmd() == 'white':
+            return WHITE
+        return EMPTY
+
+
+    def undoMove(self):
+        location = self.moves.pop()
+        color = self.get_color(location)
+        self.board[location] = EMPTY
+        self.current_player = opponent(color)
+
+
+
