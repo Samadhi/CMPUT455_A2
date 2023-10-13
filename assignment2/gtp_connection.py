@@ -303,6 +303,18 @@ class GtpConnection:
         else:
             self.respond("unknown")
         return
+    
+    def game_over(self, board: GoBoard) -> bool:
+        result1 = board.detect_five_in_a_row()
+        result2 = EMPTY
+        if self.board.get_captures(BLACK) >= 10:
+            result2 = BLACK
+        elif self.board.get_captures(WHITE) >= 10:
+            result2 = WHITE
+
+        if (result1 != EMPTY) or (result2 != EMPTY) or self.board.get_empty_points().size != 0:
+            return False
+        return True
 
     def gogui_rules_legal_moves_cmd(self, args: List[str]) -> None:
         """ We already implemented this function for Assignment 2 """
@@ -388,13 +400,49 @@ class GtpConnection:
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
-        color = self.board.current_player
+        root_board_copy: GoBoard = self.board.copy()
+        
+        self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        # print(ordered_moves_dict)
 
+        
+    # use alphabeta algorithm to simulate to find winner
+    def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
+        if depth == 0 or self.game_over(board_copy):
+            return self.staticEvaluation(board_copy, current_player)
+        
+        # use heuristic to order moves
         moves = self.board.get_empty_points()
-        ordered_moves_dict = self.order_moves(color, moves)
-        print(ordered_moves_dict)
+        ordered_moves_dict = self.order_moves(current_player, moves)
 
-        # result = 
+        for move in ordered_moves_dict:
+            board_copy.simulate_move(move, current_player)
+            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(current_player))
+            if value > alpha:
+                alpha = value
+            if value >= beta:
+                return beta
+            board_copy.undoMove()
+        return alpha
+        
+
+    def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR):
+        # is the board a draw?
+        if len(state.get_empty_points()) == 0:
+            return 0
+        # is there a 5 in a row?
+        if len(state.heuristic_five_in_a_row(current_player)) >0:
+            return 100
+        # were 10 stones captures?
+        if current_player == 1 and state.black_captures == 10:
+            return 100
+        elif current_player == 2 and state.white_captures == 10:
+            return 100
+        else:
+            return -100
+        
+        # has the time limit been reached??
+        # pass
 
     # orders all available moves based on heuristic
     def order_moves(self, color: GO_COLOR, moves: np.ndarray):
@@ -408,9 +456,10 @@ class GtpConnection:
         if len(five_in_row_list) > 0:
             print("5 in a row found")
             for move in five_in_row_list:
-                moves_dict[move] = 100
-        else:
-            for move in moves:
+                moves_dict[move[0]] = 100*move[1]
+        
+        for move in moves:
+            if not move in moves_dict:
                 moves_dict[move] = 0
                 
         sorted_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
