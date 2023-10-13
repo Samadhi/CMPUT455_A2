@@ -389,6 +389,33 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         pass
 
+    def move_dict():
+        undoMoves_dict = {}
+        for _ in board_copy:
+            if board_copy[_] == EMPTY: # empty points
+                undoMoves_dict["board_copy.pt": -10]
+            if board_copy[_] == BLACK or board_copy[_] == BLACK:
+                undoMoves_dict["board_copy.pt": 1]
+    
+    
+    def undoMove():
+        # if there is a stone change to empty
+        # if there is not a stone change to full and iterate over all empty pos and change to full
+        # need dictionary for moves and if they are full or not
+        # if they are full == 1, if they have been captured == -1
+        # if stone was already there == 0, if position is an empty point == -10
+        location = self.moves.pop()
+        if board_copy[location] == 1: # if position has a stone, change it to empty
+            board_copy[location] = -10
+        if board_copy[location] == -1 : # if stone was captured, change to full
+            i = len(moves)-1
+            while self.moves[i] == -1:
+                self.moves[i] = 1
+                i -= 1
+        color = self.board_copy.get_color(location)
+        self.board[location] = EMPTY
+        board_copy.current_player = opponent(color)
+
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here

@@ -397,6 +397,7 @@ class GoBoard(object):
         return EMPTY
 
     # functions for solve
+    '''
 
     def staticallyEvaluateForToPlay(self):
         win_color = self.winner()
@@ -419,6 +420,6 @@ class GoBoard(object):
         color = self.get_color(location)
         self.board[location] = EMPTY
         self.current_player = opponent(color)
-
+'''
 
 
