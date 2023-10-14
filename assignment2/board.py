@@ -343,10 +343,6 @@ class GoBoard(object):
                 else:
                     self.white_captures += 2
 
-    def undoMove(self):
-        #implement the undo move here!
-        pass
-
     # def heuristic_of_points(self, point: GO_POINT, color: GO_COLOR):
     #     O = opponent(color)
     #     offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
@@ -425,57 +421,123 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
-    def heuristic_five_in_a_row(self, color: GO_COLOR) -> list:
+    def heuristicEvaluation(self, color: GO_COLOR, points: list) -> list:
         """
-        Check if there is almost a 5 in row on the board. If so, append that point and color to a list and return that list
+        Check rows, columns and diags and evaluate. resturn the moves and their score
         """
-        points = []
-
+        points_dict = {}
+        for point in points:
+            points_dict[point] = 0
+ 
         for r in self.rows:
-            print("r: ", r)
-            result = self.almost_five_in_list(r)
-            if result != EMPTY:
-                points.append(self.format_results(result, color))
+            value = self.check_row(r, color)
+            for stone in r:
+                if self.get_color(stone) == EMPTY:
+                    points_dict[stone] = value
+            # points = self.format_results(value, r, color, points)
         for c in self.cols:
-            print("c: ", c)
-            result = self.almost_five_in_list(c)
-            if result != EMPTY:
-                points.append(self.format_results(result, color))
+            value = self.check_row(c, color)
+            for stone in c:
+                if self.get_color(stone) == EMPTY:
+                    points_dict[stone] = value
+            # if result != EMPTY:
+            #     points.append(self.format_results(result, c))
         for d in self.diags:
-            print("d: ", d)
-            result = self.almost_five_in_list(d)
-            if result != EMPTY:
-                points.append(self.format_results(result, color))
-        return points
+            #print("d: ", d)
+            value = self.check_row(d, color)
+            for stone in d:
+                if self.get_color(stone) == EMPTY:
+                    points_dict[stone] = value
+            # if result != EMPTY:
+            #     points.append(self.format_results(result, d))
+        return points_dict
     
-    def format_results(self, result: Tuple, color: GO_COLOR):
-        if color == result[1]:
-            return (result[0], 1)
+    def format_results(self, result: Tuple, line: list, color, points) -> dict:
+        l_color = None
+        if result > 0:
+            color = color
+            return (result[0], result[2])
         return (result[0], -1)
         
-    def almost_five_in_list(self, list) -> (GO_POINT, GO_COLOR, int):
-        prev = BORDER
-        counter = 1
-
+    def check_row(self, list, current_color: GO_COLOR):
+        e_counter = 0
+        list_counter = 0
         value = 0
-        empty_stone = None
-        in_a_row_color = None
-        for stone in list:
-            if self.get_color(stone) == prev or self.get_color(stone) == 0:
-                if in_a_row_color == opponent(self.get_color(stone)): 
-                    in_a_row_color = None
-                    counter = 1
-                elif in_a_row_color == None:
-                    if self.get_color(stone) != 0:
-                        in_a_row_color = self.get_color(stone)
+        prev = BORDER
+
+        for position in list:
+            list_counter +=1
+
+            if (abs(value) + e_counter) >= 5:
+                return value
+
+            if list_counter == 5 and self.board.size < 10:
+                return value  
+
+            color = self.get_color(position)
+            if color == EMPTY:
+                e_counter+=1
+            elif color == current_color:
+                if(value < 0):
+                    if prev != 0:
+                        e_counter = 0
                     else:
-                        empty_stone = stone
+                        e_counter = 1
+                    value = 0
+                value += 1
+            elif color == opponent(current_color):
+                if(value > 0):
+                    if prev != 0:
+                        e_counter = 0
+                    else:
+                        e_counter = 1
+                    value = 0
+                value -=1
 
-                counter += 1
+            prev = self.get_color(position)
+        return value
+        
+    # def almost_five_in_list(self, list) -> (GO_POINT, GO_COLOR, int):
+    #     prev = BORDER
+    #     counter = 1
 
-            print("current stone: ", stone, "color: ", in_a_row_color, "prev: ", prev, "counter: ", counter)
+    #     value = 0
+    #     empty_stone = None
+    #     in_a_row_color = None
 
-            if counter == 5 and in_a_row_color != None:
-                    return empty_stone, in_a_row_color, value
-            prev = self.get_color(stone)
-        return EMPTY
+    #     print("list: ", list)
+    #     for stone in list:
+    #         color = self.get_color(stone)
+    #         if color == prev:
+    #             if color != EMPTY and in_a_row_color == opponent(color):
+    #                 in_a_row_color = None
+    #                 counter = 1
+    #                 value = 0
+    #             elif in_a_row_color == None or in_a_row_color == opponent(color):
+                    
+    #             elif color == EMPTY:
+    #                 empty_stone = stone
+
+
+    #         if color == prev or color == 0:
+    #             if in_a_row_color == opponent(color): 
+    #                 print("in here")
+    #                 in_a_row_color = None
+    #                 counter = 1
+    #                 value = 0
+    #             elif in_a_row_color == None:
+    #                 if color != BORDER:
+    #                     print("here")
+    #                     print("in_row ", in_a_row_color)
+    #                     in_a_row_color = self.get_color(stone)
+    #                     value +=1
+    #                 else:
+    #                     empty_stone = stone
+
+    #             counter += 1
+
+    #         if counter == 5 and in_a_row_color != None:
+    #                 print(counter, in_a_row_color)
+    #                 return empty_stone, in_a_row_color, value
+    #         prev = self.get_color(stone)
+    #     return EMPTY

@@ -321,7 +321,7 @@ class GtpConnection:
         if (self.board.detect_five_in_a_row() != EMPTY) or \
             (self.board.get_captures(BLACK) >= 10) or \
             (self.board.get_captures(WHITE) >= 10):
-            self.respond("")
+            self.respond("") 
             return
         legal_moves = self.board.get_empty_points()
         gtp_moves: List[str] = []
@@ -402,8 +402,8 @@ class GtpConnection:
         """ Implement this function for Assignment 2 """
         root_board_copy: GoBoard = self.board.copy()
         
-        self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
-        # print(ordered_moves_dict)
+        value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        print("end value :", value)
 
         
     # use alphabeta algorithm to simulate to find winner
@@ -412,57 +412,82 @@ class GtpConnection:
             return self.staticEvaluation(board_copy, current_player)
         
         # use heuristic to order moves
-        moves = self.board.get_empty_points()
-        ordered_moves_dict = self.order_moves(current_player, moves)
+        moves = board_copy.get_empty_points()
+        moves_dict = self.board.heuristicEvaluation(current_player, moves)
+
+        ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
+
+        print("dict: ", ordered_moves_dict)
+        print()
 
         for move in ordered_moves_dict:
+            print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
             value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(current_player))
             if value > alpha:
                 alpha = value
             if value >= beta:
                 return beta
-            board_copy.undoMove()
+            self.undoMove(move, board_copy)
         return alpha
         
+    def undoMove(self, move: GO_POINT, board: GoBoard):
+        board.board[move] = EMPTY
 
-    def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR):
+    def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
+        empty_points = state.get_empty_points()
+
         # is the board a draw?
-        if len(state.get_empty_points()) == 0:
+        if len(empty_points) == 0:
             return 0
         # is there a 5 in a row?
-        if len(state.heuristic_five_in_a_row(current_player)) >0:
-            return 100
-        # were 10 stones captures?
-        if current_player == 1 and state.black_captures == 10:
-            return 100
-        elif current_player == 2 and state.white_captures == 10:
-            return 100
-        else:
-            return -100
         
-        # has the time limit been reached??
-        # pass
+        cur_five_in_row = state.heuristicEvaluation(current_player, empty_points)
+        opp_five_in_row = state.heuristicEvaluation(opponent(current_player), empty_points)
+
+        # if (cur_five_in_row[0])[1] == 5:
+        #     print("current value = ", cur_five_in_row[0][1])
+        #     return 100
+        # elif (opp_five_in_row[0])[1] == 5:
+        #     print(print("opponent value = ", opp_five_in_row[0][1]))
+        #     return -100
+        
+        # were 10 stones or the number of stones captured increased?
+        if current_player == BLACK: 
+            if state.black_captures == 10:
+                return 100
+            if state.white_captures == 10:
+                return -100
+            elif self.board.black_captures > state.black_captures:
+                return 50
+            elif self.board.white_captures < state.white_captures:
+                return -50
+
+        if current_player == 2:
+            if state.white_captures == 10:
+                return 100
+            if state.black_captures == 10:
+                return -100
+            elif self.board.white_captures > state.white_captures:
+                return 50
+            elif self.board.black_captures < state.black_captures:
+                return -50        
+            
+        return 0
 
     # orders all available moves based on heuristic
     def order_moves(self, color: GO_COLOR, moves: np.ndarray):
-        moves_dict = dict()
 
-        # for move in moves:
-        #     score = self.board.heuristic_of_points(move)
-        #     moves_dict[move] = score
-
-        five_in_row_list = self.board.heuristic_five_in_a_row(color)
-        if len(five_in_row_list) > 0:
-            print("5 in a row found")
-            for move in five_in_row_list:
-                moves_dict[move[0]] = 100*move[1]
+        moves_dict = self.board.heuristicEvaluation(color, moves)
+        # if len(five_in_row_list) > 0:
+        #     print("5 in a row found")
+        #     for move in five_in_row_list:
+        #         moves_dict[move[0]] = 100*move[1]
         
-        for move in moves:
-            if not move in moves_dict:
-                moves_dict[move] = 0
+        # for move in moves:
+        #     if not move in moves_dict:
+        #         moves_dict[move] = 0
                 
-        sorted_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
         return sorted_moves_dict
 
     """
