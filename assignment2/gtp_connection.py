@@ -42,6 +42,7 @@ class GtpConnection:
             Represents the current board state.
         """
         self._debug_mode: bool = debug_mode
+        self.timelimit = 100
         self.go_engine = go_engine
         self.board: GoBoard = board
         self.commands: Dict[str, Callable[[List[str]], None]] = {
@@ -381,9 +382,10 @@ class GtpConnection:
         move_as_string = format_point(move_coord)
         self.play_cmd([board_color, move_as_string, 'print_move'])
     
-    def timelimit_cmd(self, args: List[str]) -> None:
+    def timelimit_cmd(self, args):
         """ Implement this function for Assignment 2 """
-        pass
+        self.timelimit = int(args[0])
+        self.respond()
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
