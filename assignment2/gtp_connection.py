@@ -415,26 +415,24 @@ class GtpConnection:
         
         # use heuristic to order moves
         moves = board_copy.get_empty_points()
-        moves_dict = self.board.heuristicEvaluation(current_player, moves)
+        moves_dict = board_copy.heuristicEvaluation(current_player, moves)
 
         ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
-
-        print()
         print("dict: ", ordered_moves_dict)
+        #print(current_player)
         
         for move in ordered_moves_dict:
             print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
-            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(board_copy.current_player))
-            print("value: ", value)
+            value = -self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, board_copy.current_player)
+            print("value: ", value, "alpha: ", alpha, "beta: ", beta)
+            #print("value: ", value)
             if value > alpha:
                 alpha = value
+            board_copy.undoMove(board_copy.current_player) # pass color of current player
             if value >= beta:
                 return beta
-            
-            print("value: ", value, "alpha: ", alpha, "beta: ", beta)
 
-            board_copy.undoMove(board_copy.current_player) # pass color of current player
         return alpha
         
     def undoMove(self, move: GO_POINT, board: GoBoard):

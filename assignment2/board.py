@@ -350,7 +350,9 @@ class GoBoard(object):
         self.last2_move = self.last_move
         self.last_move = point
         O = opponent(color)
-        print("point in simulate move ", point)
+        #print("point in simulate move ", point)
+        #print("color ", self.current_player)
+        #print(self.moves_played)
         self.moves_played.append(point) # keeps track of moves for undo
         self.undoMoves_dict[point] = 1 # changes the dict point to full because have placed a stone
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
