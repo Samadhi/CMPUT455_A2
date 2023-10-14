@@ -24,7 +24,8 @@ from board_base import (
     PASS,
     MAXSIZE,
     coord_to_point,
-    opponent
+    opponent,
+    where1d # added for undo
 )
 from board import GoBoard
 from board_util import GoBoardUtil
@@ -401,6 +402,7 @@ class GtpConnection:
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         root_board_copy: GoBoard = self.board.copy()
+        self.move_dict(root_board_copy)
         
         value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
         print("end value :", value)
@@ -423,12 +425,12 @@ class GtpConnection:
         for move in ordered_moves_dict:
             print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
-            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(current_player))
+            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(board_copy.current_player))
             if value > alpha:
                 alpha = value
             if value >= beta:
                 return beta
-            self.undoMove(move, board_copy)
+            board_copy.undoMove(board_copy.current_player) # pass color of current player
         return alpha
         
     def undoMove(self, move: GO_POINT, board: GoBoard):
@@ -490,6 +492,47 @@ class GtpConnection:
                 
         return sorted_moves_dict
 
+    def move_dict(self, board_copy: GoBoard):
+        undoMoves_dict = board_copy.undoMoves_dict
+        '''
+        undoMoves_dict[where1d(self.board == EMPTY)] = -10 # all empty points
+        undoMoves_dict[where1d(self.board == BLACK)] = 1 # all points with stones
+        undoMoves_dict[where1d(self.board == WHITE)] = 1
+
+        '''
+        # array of empty points
+        empty_points_arr = board_copy.get_empty_points()
+        # array of points that have white or black stone on them
+        stones_arr = board_copy.get_black_and_white_points()
+
+        for empty_points in empty_points_arr: # assign all positions to a empty flag
+            undoMoves_dict[empty_points] = [-10]
+        for stones in stones_arr: # assign all positoins to a full flag
+            undoMoves_dict[stones] = [1]
+        
+
+        
+    '''
+    def undoMove(self):
+        # if there is a stone change to empty
+        # if there is not a stone change to full and iterate over all empty pos and change to full
+        # need dictionary for moves and if they are full or not
+        # if they are full == 1, if they have been captured == -1
+        # if stone was already there == 0, if position is an empty point == -10
+        print("in undo move")
+        board:GoBoard
+        location = self.moves.pop()
+        if board[location] == 1: # if position has a stone, change it to empty
+            board[location] = -10
+        if board[location] == -1 : # if stone was captured, change to full
+            i = len(self.moves)-1
+            while self.moves[i] == -1:
+                self.moves[i] = 1
+                i -= 1
+        color = self.board.get_color(location)
+        self.board[location] = EMPTY
+        board.current_player = opponent(color)
+    '''
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here
