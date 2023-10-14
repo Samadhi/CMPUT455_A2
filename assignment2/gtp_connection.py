@@ -419,17 +419,21 @@ class GtpConnection:
 
         ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
 
-        print("dict: ", ordered_moves_dict)
         print()
-
+        print("dict: ", ordered_moves_dict)
+        
         for move in ordered_moves_dict:
             print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
             value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(board_copy.current_player))
+            print("value: ", value)
             if value > alpha:
                 alpha = value
             if value >= beta:
                 return beta
+            
+            print("value: ", value, "alpha: ", alpha, "beta: ", beta)
+
             board_copy.undoMove(board_copy.current_player) # pass color of current player
         return alpha
         
