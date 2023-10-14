@@ -414,17 +414,18 @@ class GtpConnection:
             return self.staticEvaluation(board_copy, current_player)
         
         # use heuristic to order moves
-        moves = self.board.get_empty_points()
-        ordered_moves_dict = self.order_moves(current_player, moves)
+        moves = board_copy.get_empty_points()
+        #ordered_moves_dict = self.order_moves(current_player, moves)
 
-        for move in ordered_moves_dict:
+        for move in moves:
             board_copy.simulate_move(move, current_player)
-            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(current_player))
+            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(board_copy.current_player))
             if value > alpha:
                 alpha = value
             if value >= beta:
                 return beta
-            board_copy.undoMove()
+            print("current player in alphabeta ", board_copy.current_player)
+            board_copy.undoMove(board_copy.current_player) # pass color of current player
         return alpha
         
 
@@ -468,33 +469,23 @@ class GtpConnection:
         return sorted_moves_dict
 
     def move_dict(self, board_copy: GoBoard):
-        undoMoves_dict = dict()
+        undoMoves_dict = board_copy.undoMoves_dict
         '''
         undoMoves_dict[where1d(self.board == EMPTY)] = -10 # all empty points
         undoMoves_dict[where1d(self.board == BLACK)] = 1 # all points with stones
         undoMoves_dict[where1d(self.board == WHITE)] = 1
 
         '''
-        
-        print('in move_dict')
-       
-        empty_points = board_copy.get_empty_points()
-        print("where")
-        #stones = where1d(board_copy == BLACK)
-        print(board_copy.get_empty_points())
-        print(board_copy.get_black_points)
-        print(board_copy.get_white_points)
-        stones = np.concatenate((board_copy.get_black_points, board_copy.get_white_points))
+        # array of empty points
+        empty_points_arr = board_copy.get_empty_points()
+        # array of points that have white or black stone on them
+        stones_arr = board_copy.get_black_and_white_points()
 
-        print(stones)
-        for _ in empty_points:
-            # empty points
-            print("hiiiii")
-            print(undoMoves_dict[empty_points(_)])
-            undoMoves_dict[empty_points(_)] = [-10]
-        # full points
-        for _ in stones:
-            undoMoves_dict[stones(_)] = [1]
+        for empty_points in empty_points_arr: # assign all positions to a empty flag
+            undoMoves_dict[empty_points] = [-10]
+        for stones in stones_arr: # assign all positoins to a full flag
+            undoMoves_dict[stones] = [1]
+        
 
         
     '''
