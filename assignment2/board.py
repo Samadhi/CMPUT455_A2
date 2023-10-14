@@ -52,6 +52,7 @@ class GoBoard(object):
         self.calculate_rows_cols_diags()
         self.black_captures = 0
         self.white_captures = 0
+        self.undoMoves_dict = dict() # for undo
 
     def add_two_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
@@ -204,6 +205,12 @@ class GoBoard(object):
             The empty points on the board
         """
         return where1d(self.board == EMPTY)
+    
+    def get_black_points(self) -> np.ndarray:
+        return where1d(self.board == BLACK)
+    
+    def get_white_points(self) -> np.ndarray:
+        return where1d(self.board == WHITE)
 
     def row_start(self, row: int) -> int:
         assert row >= 1
@@ -326,7 +333,7 @@ class GoBoard(object):
                     self.black_captures += 2
                 else:
                     self.white_captures += 2
-        self.moves.append(point)
+        
         return True
     
     def simulate_move(self, point: GO_POINT, color: GO_COLOR):
@@ -335,6 +342,7 @@ class GoBoard(object):
         self.last2_move = self.last_move
         self.last_move = point
         O = opponent(color)
+        self.moves.append(point)
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
         for offset in offsets:
             if self.board[point+offset] == O and self.board[point+(offset*2)] == O and self.board[point+(offset*3)] == color:
@@ -346,8 +354,45 @@ class GoBoard(object):
                     self.white_captures += 2
 
     def undoMove(self):
-        #implement the undo move here!
-        pass
+        # if there is a stone change to empty
+        # if there is not a stone change to full and iterate over all empty pos and change to full
+        # need dictionary for moves and if they are full or not
+        # if they are full == 1, if they have been captured == -1
+        # if stone was already there == 0, if position is an empty point == -10
+        print("moves list")
+        print(self.moves)
+        #board:GoBoard
+        location = self.moves.pop()
+        print(location)
+        #x = self.undoMoves_dict[location]
+        #print(x)
+        print("print")
+        print(self.undoMoves_dict)
+        if (location, 1) in self.undoMoves_dict.items(): # if position has a stone, change it to empty
+            self.undoMoves_dict[location] = -10
+        
+        if (location, -1) in self.undoMoves_dict.items():
+            self.undoMoves_dict[location] = 1
+            i = len(self.moves)-1
+            while (self.moves[i], -1) in self.undoMoves_dict.items():
+                self.undoMoves_dict[location] = 1
+                i -= 1
+        print(self.undoMoves_dict)
+
+        color = self.get_color(location)
+        self.board[location] = EMPTY
+        self.current_player = opponent(color)
+
+        '''
+        self.undoMoves_dict[location] == [1]: # if position has a stone, change it to empty
+            self.undoMoves_dict[location] = -10
+        if self.undoMoves_dict[location].get(location) == -1 : # if stone was captured, change to full
+            i = len(self.moves)-1
+            while self.moves[i] == -1:
+                self.moves[i] = 1
+                i -= 1
+        
+        '''
 
     # def heuristic_of_points(self, point: GO_POINT, color: GO_COLOR):
     #     O = opponent(color)
@@ -434,17 +479,17 @@ class GoBoard(object):
         points = []
 
         for r in self.rows:
-            print("r: ", r)
+            #print("r: ", r)
             result = self.almost_five_in_list(r)
             if result != EMPTY:
                 points.append(self.format_results(result, color))
         for c in self.cols:
-            print("c: ", c)
+            #print("c: ", c)
             result = self.almost_five_in_list(c)
             if result != EMPTY:
                 points.append(self.format_results(result, color))
         for d in self.diags:
-            print("d: ", d)
+            #print("d: ", d)
             result = self.almost_five_in_list(d)
             if result != EMPTY:
                 points.append(self.format_results(result, color))
@@ -475,7 +520,7 @@ class GoBoard(object):
 
                 counter += 1
 
-            print("current stone: ", stone, "color: ", in_a_row_color, "prev: ", prev, "counter: ", counter)
+            #print("current stone: ", stone, "color: ", in_a_row_color, "prev: ", prev, "counter: ", counter)
 
             if counter == 5 and in_a_row_color != None:
                     return empty_stone, in_a_row_color, value

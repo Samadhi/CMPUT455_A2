@@ -33,9 +33,10 @@ class Go0(GoEngine):
         """
         # psuedo code below, is a recursive alpha beta negamax function
         #call the alphabeta function to solve
-        return self.alphabeta(board, -INFINITY, INFINITY) 
+        #return self.alphabeta(board, -INFINITY, INFINITY) 
+        pass
     
-       
+    '''
     def alphabeta(self, board: GoBoard, alpha, beta):
 
         if self.board.end_of_game():
@@ -52,6 +53,7 @@ class Go0(GoEngine):
         return alpha
 
     '''
+    '''
     def alphabeta(state, alpha, beta)
         if reached end of game state:
                 return staticallyEvaluateForToPlay() --> honestly not completely                    sure what this function does i think it says who won 
@@ -67,6 +69,7 @@ class Go0(GoEngine):
         # think we will need function to reset the moves completely in case
         # we run out of time
         return alpha
+    
     '''
     '''
     def staticallyEvaluateForToPlay(self):
@@ -76,6 +79,8 @@ class Go0(GoEngine):
             if self.board.end_of_game(): return 0
             else: return 1
         else: return -10
+    '''
+    '''
     '''
     #need staticallyEvaluateForToPlay() function
     #    assign variable to winner
@@ -128,6 +133,7 @@ class Go0(GoEngine):
 
     #need play function --> call board.py play_move but would need to know 
     #    current color
+    
 
 def run() -> None:
     """
