@@ -401,12 +401,52 @@ class GtpConnection:
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
+        # response is winner [move]
+        # winner is either b, w, draw, or unknown
+        # unknown if solver cannot solve the game within the current time limit
+        # If the winner is toPlay or if its a draw, then also write a move that 
+        #   you found that achieves this best possible result.
+        # If there are several best moves, then write any one of them.
+        # If the winner is the opponent or unknown, then do not write any move in your GTP response
         root_board_copy: GoBoard = self.board.copy()
         self.move_dict(root_board_copy)
-        
         self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
-        # print(ordered_moves_dict)
 
+        winner = self.winner(root_board_copy)
+        moves = root_board_copy.get_empty_points()
+        ordered_moves_dict = self.order_moves(self.board.current_player, moves)
+        best_move = list(ordered_moves_dict.keys())[0] # definitly need to change, rn just returning the first key,value pair --> also returning as 11, not e1
+        #first_key = list(student_name.keys())[0]
+        print(self.winner(root_board_copy))
+
+        if self.timelimit_cmd == False: # if timelimit exceeded
+            self.respond("unknown")
+        elif winner == self.board.current_player or winner == EMPTY: # if current player won or there was a draw. EMPTY means there was a draw
+            if winner == EMPTY:
+                self.respond("draw {}".format(best_move)) # 
+            elif self.board.current_player == BLACK:
+                self.respond("black {}".format(best_move)) #
+            elif self.board.current_player == WHITE:
+                self.respond("white {}".format(best_move)) #
+        else: # the opponent won so winner != self.board.current_player or EMPTY
+            self.respond("white")
+
+    def winner(self, board_copy: GoBoard):
+        result1 = board_copy.detect_five_in_a_row()
+        result2 = EMPTY
+        if board_copy.get_captures(BLACK) >= 10:
+            result2 = BLACK
+        elif board_copy.get_captures(WHITE) >= 10:
+            result2 = WHITE
+        
+        if result1 == BLACK or result2 ==  BLACK:
+            return BLACK
+        if result1 == WHITE or result2 == WHITE:
+            print(result1)
+            print(result2)
+            return WHITE
+        else:
+            return EMPTY
         
     # use alphabeta algorithm to simulate to find winner
     def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
@@ -424,7 +464,6 @@ class GtpConnection:
                 alpha = value
             if value >= beta:
                 return beta
-            print("current player in alphabeta ", board_copy.current_player)
             board_copy.undoMove(board_copy.current_player) # pass color of current player
         return alpha
         
