@@ -10,6 +10,7 @@ at the University of Edinburgh.
 """
 import traceback
 import numpy as np
+import time
 import re
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
@@ -384,8 +385,15 @@ class GtpConnection:
     
     def timelimit_cmd(self, args):
         """ Implement this function for Assignment 2 """
-        self.timelimit = int(args[0])
-        self.respond()
+       self.timelimit = 100
+       start_time = time.time()
+       end_time = time.time()
+       total_time = end_time - start_time
+       if total_time > 100:
+           print("time exceeded")
+       else:
+           print("Total time it took to solve a move = ", total_time)
+       self.respond()
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
