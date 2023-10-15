@@ -198,6 +198,9 @@ class GtpConnection:
     def showboard_cmd(self, args: List[str]) -> None:
         self.respond("\n" + self.board2d())
 
+    def showcopy_cmd(self, board) -> None:
+        self.respond("\n" + str(GoBoardUtil.get_twoD_board(board)))
+
     def komi_cmd(self, args: List[str]) -> None:
         """
         Set the engine's komi to args[0]
@@ -316,13 +319,28 @@ class GtpConnection:
         if (result1 != EMPTY) or (result2 != EMPTY) or self.board.get_empty_points().size != 0:
             return False
         return True
+    
+    def winner(self, board_copy: GoBoard):
+        result1 = board_copy.detect_five_in_a_row()
+        result2 = EMPTY
+        if board_copy.get_captures(BLACK) >= 10:
+            result2 = BLACK
+        elif board_copy.get_captures(WHITE) >= 10:
+            result2 = WHITE
+        
+        if result1 == BLACK or result2 ==  BLACK:
+            return BLACK
+        if result1 == WHITE or result2 == WHITE:
+            return WHITE
+        else:
+            return EMPTY
 
     def gogui_rules_legal_moves_cmd(self, args: List[str]) -> None:
         """ We already implemented this function for Assignment 2 """
         if (self.board.detect_five_in_a_row() != EMPTY) or \
             (self.board.get_captures(BLACK) >= 10) or \
             (self.board.get_captures(WHITE) >= 10):
-            self.respond("")
+            self.respond("") 
             return
         legal_moves = self.board.get_empty_points()
         gtp_moves: List[str] = []
@@ -410,7 +428,9 @@ class GtpConnection:
         # If the winner is the opponent or unknown, then do not write any move in your GTP response
         root_board_copy: GoBoard = self.board.copy()
         self.move_dict(root_board_copy)
-        self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        print(self.board.current_player)
+        value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        #print("end value :", value)
 
         winner = self.winner(root_board_copy)
         moves = root_board_copy.get_empty_points()
@@ -455,56 +475,74 @@ class GtpConnection:
         
         # use heuristic to order moves
         moves = board_copy.get_empty_points()
-        #ordered_moves_dict = self.order_moves(current_player, moves)
+        #print("moves ", moves)
+        moves_dict = board_copy.heuristicEvaluation(current_player, moves)
 
-        for move in moves:
+        ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
+        #print("dict: ", ordered_moves_dict)
+        #print(current_player)
+        
+        for move in ordered_moves_dict:
+            #print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
-            value = self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, opponent(board_copy.current_player))
+            print(self.showcopy_cmd(board_copy))
+            value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
+            #print(value)
+        
             if value > alpha:
+                #print("1 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 alpha = value
-            if value >= beta:
-                return beta
             board_copy.undoMove(board_copy.current_player) # pass color of current player
+            print(self.showcopy_cmd(board_copy))
+            if value >= beta:                
+                #print("2 value: ", value, "alpha: ", alpha, "beta: ", beta)
+                return beta
+        #print("hola")
+            
         return alpha
         
+    def undoMove(self, move: GO_POINT, board: GoBoard):
+        board.board[move] = EMPTY
 
-    def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR):
-        # is the board a draw?
-        if len(state.get_empty_points()) == 0:
-            return 0
-        # is there a 5 in a row?
-        if len(state.heuristic_five_in_a_row(current_player)) >0:
-            return 100
-        # were 10 stones captures?
-        if current_player == 1 and state.black_captures == 10:
-            return 100
-        elif current_player == 2 and state.white_captures == 10:
-            return 100
-        else:
-            return -100
+    def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
+        #empty_points = state.get_empty_points()
+
+        win_color = self.winner(state)
+
+        assert win_color != current_player
+        if win_color == EMPTY:
+            if self.game_over(state): return 0
+            else: return 1
+        else: 
+            return -10
+        # # is the board a draw?
+        # if len(empty_points) == 0:
+        #     return 0
+        # # is there a 5 in a row?
         
-        # has the time limit been reached??
-        # pass
+        # winner = self.winner(state) 
+
+        # if winner == current_player:
+        #     return 100
+        # elif winner == opponent(current_player):
+        #     return -100
+        # else:
+        #     return 0
+
 
     # orders all available moves based on heuristic
     def order_moves(self, color: GO_COLOR, moves: np.ndarray):
-        moves_dict = dict()
 
-        # for move in moves:
-        #     score = self.board.heuristic_of_points(move)
-        #     moves_dict[move] = score
-
-        five_in_row_list = self.board.heuristic_five_in_a_row(color)
-        if len(five_in_row_list) > 0:
-            #print("5 in a row found")
-            for move in five_in_row_list:
-                moves_dict[move[0]] = 100*move[1]
+        moves_dict = self.board.heuristicEvaluation(color, moves)
+        # if len(five_in_row_list) > 0:
+        #     print("5 in a row found")
+        #     for move in five_in_row_list:
+        #         moves_dict[move[0]] = 100*move[1]
         
-        for move in moves:
-            if not move in moves_dict:
-                moves_dict[move] = 0
+        # for move in moves:
+        #     if not move in moves_dict:
+        #         moves_dict[move] = 0
                 
-        sorted_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
         return sorted_moves_dict
 
     def move_dict(self, board_copy: GoBoard):
