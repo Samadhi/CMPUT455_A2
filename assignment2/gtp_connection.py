@@ -430,24 +430,27 @@ class GtpConnection:
         self.move_dict(root_board_copy)
         print(self.board.current_player)
         value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        print("print end value ", value)
         #print("end value :", value)
 
         winner = self.winner(root_board_copy)
         moves = root_board_copy.get_empty_points()
-        ordered_moves_dict = self.order_moves(self.board.current_player, moves)
-        best_move = list(ordered_moves_dict.keys())[0] # definitly need to change, rn just returning the first key,value pair --> also returning as 11, not e1
+        #self.board.ordered_moves_dict = self.staticEvaluation(root_board_copy, self.board.current_player)
+        #best_move = value[0]#list(root_board_copy.ordered_moves_dict.keys())[0] # definitly need to change, rn just returning the first key,value pair --> also returning as 11, not e1
         #first_key = list(student_name.keys())[0]
-        print(self.winner(root_board_copy))
+        best_move = point_to_coord(root_board_copy.best_move[0], self.board.size)
+        best_move_string = format_point(best_move).lower()
+
 
         if self.timelimit_cmd == False: # if timelimit exceeded
             self.respond("unknown")
         elif winner == self.board.current_player or winner == EMPTY: # if current player won or there was a draw. EMPTY means there was a draw
             if winner == EMPTY:
-                self.respond("draw {}".format(best_move)) # 
+                self.respond("draw {}".format(best_move_string)) # 
             elif self.board.current_player == BLACK:
-                self.respond("black {}".format(best_move)) #
+                self.respond("black {}".format(best_move_string)) #
             elif self.board.current_player == WHITE:
-                self.respond("white {}".format(best_move)) #
+                self.respond("white {}".format(best_move_string)) #
         else: # the opponent won so winner != self.board.current_player or EMPTY
             self.respond("white")
 
@@ -462,8 +465,6 @@ class GtpConnection:
         if result1 == BLACK or result2 ==  BLACK:
             return BLACK
         if result1 == WHITE or result2 == WHITE:
-            print(result1)
-            print(result2)
             return WHITE
         else:
             return EMPTY
@@ -475,75 +476,45 @@ class GtpConnection:
         
         # use heuristic to order moves
         moves = board_copy.get_empty_points()
-        #print("moves ", moves)
         moves_dict = board_copy.heuristicEvaluation(current_player, moves)
 
-        ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
-        #print("dict: ", ordered_moves_dict)
-        #print(current_player)
+        board_copy.ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
         
-        for move in ordered_moves_dict:
-            #print("current move: ", move, "depth: ", depth)
+        for move in board_copy.ordered_moves_dict:
             board_copy.simulate_move(move, current_player)
             print(self.showcopy_cmd(board_copy))
             value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
-            #print(value)
+            print("value and move is ", value, move)
         
             if value > alpha:
-                #print("1 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 alpha = value
+                print("value and move in alpha is ", value, move)
+                print("alphabeta window, alpha, beta ", alpha, beta)
             board_copy.undoMove(board_copy.current_player) # pass color of current player
             print(self.showcopy_cmd(board_copy))
             if value >= beta:                
-                #print("2 value: ", value, "alpha: ", alpha, "beta: ", beta)
+                print("value and move in beta is ", value, move)
+                print("alphabeta window, alpha, beta ", alpha, beta)
+                board_copy.best_move = [move, beta]
                 return beta
-        #print("hola")
+            
+        board_copy.best_move = [move, alpha]
             
         return alpha
-        
-    def undoMove(self, move: GO_POINT, board: GoBoard):
-        board.board[move] = EMPTY
 
     def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
         #empty_points = state.get_empty_points()
 
         win_color = self.winner(state)
 
-        assert win_color != current_player
+        #assert win_color != current_player
         if win_color == EMPTY:
-            if self.game_over(state): return 0
+            if self.game_over(state): 
+                print("game over") 
+                return 0
             else: return 1
         else: 
             return -10
-        # # is the board a draw?
-        # if len(empty_points) == 0:
-        #     return 0
-        # # is there a 5 in a row?
-        
-        # winner = self.winner(state) 
-
-        # if winner == current_player:
-        #     return 100
-        # elif winner == opponent(current_player):
-        #     return -100
-        # else:
-        #     return 0
-
-
-    # orders all available moves based on heuristic
-    def order_moves(self, color: GO_COLOR, moves: np.ndarray):
-
-        moves_dict = self.board.heuristicEvaluation(color, moves)
-        # if len(five_in_row_list) > 0:
-        #     print("5 in a row found")
-        #     for move in five_in_row_list:
-        #         moves_dict[move[0]] = 100*move[1]
-        
-        # for move in moves:
-        #     if not move in moves_dict:
-        #         moves_dict[move] = 0
-                
-        return sorted_moves_dict
 
     def move_dict(self, board_copy: GoBoard):
         undoMoves_dict = board_copy.undoMoves_dict
@@ -563,29 +534,6 @@ class GtpConnection:
         for stones in stones_arr: # assign all positoins to a full flag
             undoMoves_dict[stones] = [1]
         
-
-        
-    '''
-    def undoMove(self):
-        # if there is a stone change to empty
-        # if there is not a stone change to full and iterate over all empty pos and change to full
-        # need dictionary for moves and if they are full or not
-        # if they are full == 1, if they have been captured == -1
-        # if stone was already there == 0, if position is an empty point == -10
-        print("in undo move")
-        board:GoBoard
-        location = self.moves.pop()
-        if board[location] == 1: # if position has a stone, change it to empty
-            board[location] = -10
-        if board[location] == -1 : # if stone was captured, change to full
-            i = len(self.moves)-1
-            while self.moves[i] == -1:
-                self.moves[i] = 1
-                i -= 1
-        color = self.board.get_color(location)
-        self.board[location] = EMPTY
-        board.current_player = opponent(color)
-    '''
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here

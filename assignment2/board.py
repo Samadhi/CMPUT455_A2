@@ -53,6 +53,8 @@ class GoBoard(object):
         self.black_captures = 0
         self.white_captures = 0
         self.undoMoves_dict = dict() # for undo
+        self.ordered_moves_dict = dict()
+        self.best_move = []
 
     def add_two_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
@@ -351,12 +353,7 @@ class GoBoard(object):
         self.last2_move = self.last_move
         self.last_move = point
         O = opponent(color)
-        #print("point in simulate move ", point)
-        #print("color ", self.current_player)
-        #print(self.moves_played)
-        print("current color is ", color)
         self.moves_played.append(point) # keeps track of moves for undo
-        print("moves played in simulate ", self.moves_played)
         self.undoMoves_dict[point] = 1 # changes the dict point to full because have placed a stone
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
         for offset in offsets:
@@ -383,57 +380,24 @@ class GoBoard(object):
         # need dictionary for moves and if they are full or not
         # if they are full == 1, if they have been captured == -1
         # if stone was already there == 0, if position is an empty point == -10
-        print("befroe popped ", self.moves_played)
         location = self.moves_played.pop()
-        #print("move popped ", location)
-        print("after popped ", self.moves_played)
-        #print("location ", self.undoMoves_dict[location])
         
         if (location, 1) in self.undoMoves_dict.items(): # if position has a stone, change it to empty
-            #print("yohooo!!")
             if location in self.captured_points:
-                print("capture points ", self.captured_points)
                 self.captured_points.remove(location)
-                print(self.captured_points)
                 self.undoMoves_dict[location] = -1
             else:
                 self.undoMoves_dict[location] = -10
         
         elif (location, -1) in self.undoMoves_dict.items(): # if the position was previously captured, now change it to full
-            #print("hello")
             while (self.undoMoves_dict[location] == -1):
-                #print("before location ", self.undoMoves_dict[location])
                 self.undoMoves_dict[location] = 1
-                #print("after location ", self.undoMoves_dict[location])
-                #print("print color ", opponent(color))
                 self.board[location] = color
                 location = self.moves_played.pop()
         
-            # now supposed to iterate over all the items in move list that are empty
-            # and change them to full because these are the ones that have been captured
-            # basically change the captured flag to full
-            #while (self.moves[i], -1) in self.moves: # definitely not sure if this is working or not tho
-            # while (self.moves[i], -1) in self.undoMoves_dict.items():
-            #     print("hii")
-            #     self.undoMoves_dict[location] = 1
-            #     i -= 1
-        #print("moves ", self.moves_played)
-        #print("point popped ", location)
         self.board[location] = EMPTY
-        print("current play before ", self.current_player)
         self.current_player= opponent(color)
-        print("current play after ", self.current_player)
 
-    # def heuristic_of_points(self, point: GO_POINT, color: GO_COLOR):
-    #     O = opponent(color)
-    #     offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
-    #     for offset in offsets:
-    #         if len(self.neighbors_of_color(point, EMPTY)):
-    #             print("no neighbors")
-    #             return 0
-    #         elif self.board[point+offset] == O and self.board[point+(offset*2)] == O and self.board[point+(offset*3)] == EMPTY:
-    #             print("capture")
-    #             return 1
 
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
         """ List of neighbors of point of given color """
@@ -524,7 +488,6 @@ class GoBoard(object):
             # if result != EMPTY:
             #     points.append(self.format_results(result, c))
         for d in self.diags:
-            #print("d: ", d)
             value = self.check_row(d, color)
             for stone in d:
                 if self.get_color(stone) == EMPTY:
@@ -578,47 +541,4 @@ class GoBoard(object):
             prev = self.get_color(position)
         return value
         
-    # def almost_five_in_list(self, list) -> (GO_POINT, GO_COLOR, int):
-    #     prev = BORDER
-    #     counter = 1
-
-    #     value = 0
-    #     empty_stone = None
-    #     in_a_row_color = None
-
-    #     print("list: ", list)
-    #     for stone in list:
-    #         color = self.get_color(stone)
-    #         if color == prev:
-    #             if color != EMPTY and in_a_row_color == opponent(color):
-    #                 in_a_row_color = None
-    #                 counter = 1
-    #                 value = 0
-    #             elif in_a_row_color == None or in_a_row_color == opponent(color):
-                    
-    #             elif color == EMPTY:
-    #                 empty_stone = stone
-
-
-    #         if color == prev or color == 0:
-    #             if in_a_row_color == opponent(color): 
-    #                 print("in here")
-    #                 in_a_row_color = None
-    #                 counter = 1
-    #                 value = 0
-    #             elif in_a_row_color == None:
-    #                 if color != BORDER:
-    #                     print("here")
-    #                     print("in_row ", in_a_row_color)
-    #                     in_a_row_color = self.get_color(stone)
-    #                     value +=1
-    #                 else:
-    #                     empty_stone = stone
-
-    #             counter += 1
-
-    #         if counter == 5 and in_a_row_color != None:
-    #                 print(counter, in_a_row_color)
-    #                 return empty_stone, in_a_row_color, value
-    #         prev = self.get_color(stone)
-    #     return EMPTY
+   
