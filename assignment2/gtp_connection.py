@@ -389,10 +389,12 @@ class GtpConnection:
        start_time = time.time()
        end_time = time.time()
        total_time = end_time - start_time
-       if total_time > 100:
-           print("time exceeded")
-       else:
-           print("Total time it took to solve a move = ", total_time)
+       while timelimit < 100:
+           if total_time > 100 or total_time == 100:
+               print("unknown")
+               break
+           else:
+               print("Total time it took to solve a move = ", total_time)
        self.respond()
 
     def solve_cmd(self, args: List[str]) -> None:
