@@ -477,7 +477,7 @@ class GoBoard(object):
                 return prev
         return EMPTY
     
-    def heuristicEvaluation(self, color: GO_COLOR, points: list) -> list:
+    def heuristicEvaluation(self, color: GO_COLOR, points: list) -> dict:
         """
         Check rows, columns and diags and evaluate. resturn the moves and their score
         """

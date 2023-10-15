@@ -198,6 +198,9 @@ class GtpConnection:
     def showboard_cmd(self, args: List[str]) -> None:
         self.respond("\n" + self.board2d())
 
+    def showcopy_cmd(self, board) -> None:
+        self.respond("\n" + str(GoBoardUtil.get_twoD_board(board)))
+
     def komi_cmd(self, args: List[str]) -> None:
         """
         Set the engine's komi to args[0]
@@ -316,6 +319,21 @@ class GtpConnection:
         if (result1 != EMPTY) or (result2 != EMPTY) or self.board.get_empty_points().size != 0:
             return False
         return True
+    
+    def winner(self, board_copy: GoBoard):
+        result1 = board_copy.detect_five_in_a_row()
+        result2 = EMPTY
+        if board_copy.get_captures(BLACK) >= 10:
+            result2 = BLACK
+        elif board_copy.get_captures(WHITE) >= 10:
+            result2 = WHITE
+        
+        if result1 == BLACK or result2 ==  BLACK:
+            return BLACK
+        if result1 == WHITE or result2 == WHITE:
+            return WHITE
+        else:
+            return EMPTY
 
     def gogui_rules_legal_moves_cmd(self, args: List[str]) -> None:
         """ We already implemented this function for Assignment 2 """
@@ -424,60 +442,48 @@ class GtpConnection:
         for move in ordered_moves_dict:
             print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
-            value = -self.run_alphaBeta(board_copy, depth-1, -alpha, -beta, board_copy.current_player)
-            print("value: ", value, "alpha: ", alpha, "beta: ", beta)
-            #print("value: ", value)
+            print(self.showcopy_cmd(board_copy))
+            value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
+            print(value)
+        
             if value > alpha:
+                print("1 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 alpha = value
             board_copy.undoMove(board_copy.current_player) # pass color of current player
-            if value >= beta:
+            if value >= beta:                
+                print("2 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 return beta
-
+            
         return alpha
         
     def undoMove(self, move: GO_POINT, board: GoBoard):
         board.board[move] = EMPTY
 
     def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
-        empty_points = state.get_empty_points()
+        #empty_points = state.get_empty_points()
 
-        # is the board a draw?
-        if len(empty_points) == 0:
-            return 0
-        # is there a 5 in a row?
+        win_color = self.winner(state)
+
+        assert win_color != current_player
+        if win_color == EMPTY:
+            if self.game_over(state): return 0
+            else: return 1
+        else: 
+            return -10
+        # # is the board a draw?
+        # if len(empty_points) == 0:
+        #     return 0
+        # # is there a 5 in a row?
         
-        cur_five_in_row = state.heuristicEvaluation(current_player, empty_points)
-        opp_five_in_row = state.heuristicEvaluation(opponent(current_player), empty_points)
+        # winner = self.winner(state) 
 
-        # if (cur_five_in_row[0])[1] == 5:
-        #     print("current value = ", cur_five_in_row[0][1])
+        # if winner == current_player:
         #     return 100
-        # elif (opp_five_in_row[0])[1] == 5:
-        #     print(print("opponent value = ", opp_five_in_row[0][1]))
+        # elif winner == opponent(current_player):
         #     return -100
-        
-        # were 10 stones or the number of stones captured increased?
-        if current_player == BLACK: 
-            if state.black_captures == 10:
-                return 100
-            if state.white_captures == 10:
-                return -100
-            elif self.board.black_captures > state.black_captures:
-                return 50
-            elif self.board.white_captures < state.white_captures:
-                return -50
+        # else:
+        #     return 0
 
-        if current_player == 2:
-            if state.white_captures == 10:
-                return 100
-            if state.black_captures == 10:
-                return -100
-            elif self.board.white_captures > state.white_captures:
-                return 50
-            elif self.board.black_captures < state.black_captures:
-                return -50        
-            
-        return 0
 
     # orders all available moves based on heuristic
     def order_moves(self, color: GO_COLOR, moves: np.ndarray):
