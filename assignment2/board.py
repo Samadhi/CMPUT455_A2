@@ -143,6 +143,7 @@ class GoBoard(object):
         self.black_captures = 0
         self.white_captures = 0
         self.moves_played = [] # put in for solve
+        self.captured_points =[] # for solve
 
     def copy(self) -> 'GoBoard':
         b = GoBoard(self.size)
@@ -355,7 +356,7 @@ class GoBoard(object):
         #print(self.moves_played)
         print("current color is ", color)
         self.moves_played.append(point) # keeps track of moves for undo
-        print(self.moves_played)
+        print("moves played in simulate ", self.moves_played)
         self.undoMoves_dict[point] = 1 # changes the dict point to full because have placed a stone
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
         for offset in offsets:
@@ -369,6 +370,8 @@ class GoBoard(object):
                 # add  point caputred to moves played
                 self.moves_played.append(point+offset)
                 self.moves_played.append(point+(offset*2))
+                self.captured_points.append(point+offset)
+                self.captured_points.append(point+(offset*2))
                 if color == BLACK:
                     self.black_captures += 2
                 else:
@@ -380,23 +383,30 @@ class GoBoard(object):
         # need dictionary for moves and if they are full or not
         # if they are full == 1, if they have been captured == -1
         # if stone was already there == 0, if position is an empty point == -10
-        #print(self.moves_played)
+        print("befroe popped ", self.moves_played)
         location = self.moves_played.pop()
         #print("move popped ", location)
-        #print(self.moves_played)
+        print("after popped ", self.moves_played)
         #print("location ", self.undoMoves_dict[location])
         
         if (location, 1) in self.undoMoves_dict.items(): # if position has a stone, change it to empty
             #print("yohooo!!")
-            self.undoMoves_dict[location] = -10
+            if location in self.captured_points:
+                print("capture points ", self.captured_points)
+                self.captured_points.remove(location)
+                print(self.captured_points)
+                self.undoMoves_dict[location] = -1
+            else:
+                self.undoMoves_dict[location] = -10
         
-        if (location, -1) in self.undoMoves_dict.items(): # if the position was previously captured, now change it to full
+        elif (location, -1) in self.undoMoves_dict.items(): # if the position was previously captured, now change it to full
             #print("hello")
             while (self.undoMoves_dict[location] == -1):
                 #print("before location ", self.undoMoves_dict[location])
                 self.undoMoves_dict[location] = 1
                 #print("after location ", self.undoMoves_dict[location])
-                self.board[location] = opponent(color)
+                #print("print color ", opponent(color))
+                self.board[location] = color
                 location = self.moves_played.pop()
         
             # now supposed to iterate over all the items in move list that are empty

@@ -443,7 +443,7 @@ class GtpConnection:
         for move in ordered_moves_dict:
             #print("current move: ", move, "depth: ", depth)
             board_copy.simulate_move(move, current_player)
-            #print(self.showcopy_cmd(board_copy))
+            print(self.showcopy_cmd(board_copy))
             value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
             #print(value)
         
@@ -451,7 +451,7 @@ class GtpConnection:
                 #print("1 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 alpha = value
             board_copy.undoMove(board_copy.current_player) # pass color of current player
-            #print(self.showcopy_cmd(board_copy))
+            print(self.showcopy_cmd(board_copy))
             if value >= beta:                
                 #print("2 value: ", value, "alpha: ", alpha, "beta: ", beta)
                 return beta
