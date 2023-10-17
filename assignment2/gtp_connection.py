@@ -8,6 +8,7 @@ Parts of this code were originally based on the gtp module
 in the Deep-Go project by Isaac Henrion and Amos Storkey 
 at the University of Edinburgh.
 """
+import time
 import traceback
 import numpy as np
 import re
@@ -47,6 +48,8 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+        self.time_start = 0
+        self.max_time = 0
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -317,13 +320,7 @@ class GtpConnection:
             result2 = BLACK
         elif board.get_captures(WHITE) >= 10:
             result2 = WHITE
-        #print("result 1 {} result 2 {}".format(result1, result2))
-        #if (result1 != EMPTY) or (result2 != EMPTY) or len(board.moves_played) == 
         if (result1 != EMPTY) or (result2 != EMPTY) or board.get_empty_points().size == 0:
-            #print(self.showcopy_cmd(board))
-            #print("empty points ", board.get_empty_points().size)
-            #print(self.showcopy_cmd(board))
-            #print("result is working")
             return True
         return False
     
@@ -422,7 +419,7 @@ class GtpConnection:
     
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
-        pass
+        self.max_time = int(args[0])
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
@@ -433,61 +430,54 @@ class GtpConnection:
         #   you found that achieves this best possible result.
         # If there are several best moves, then write any one of them.
         # If the winner is the opponent or unknown, then do not write any move in your GTP response
-        root_board_copy: GoBoard = self.board.copy()
+        self.time_start = time.process_time()
+
+        root_board_copy: GoBoard = copy.deepcopy(self.board)
         self.move_dict(root_board_copy)
-        #print(self.board.current_player)
-        #value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
         value = self.run_alphaBeta(root_board_copy, 0, -10000, 10000, self.board.current_player)
         print("print end value ", value)
-        #print("end value :", value)
 
-        winner = self.winner(root_board_copy)
-        moves = root_board_copy.get_empty_points()
-        #self.board.ordered_moves_dict = self.staticEvaluation(root_board_copy, self.board.current_player)
-        #best_move = value[0]#list(root_board_copy.ordered_moves_dict.keys())[0] # definitly need to change, rn just returning the first key,value pair --> also returning as 11, not e1
-        #first_key = list(student_name.keys())[0]
-        print(value)
         best_move = point_to_coord(value[1], self.board.size)
         best_move_string = format_point(best_move).lower()
 
-
-        if self.timelimit_cmd == False: # if timelimit exceeded
-            self.respond("unknown")
-        elif winner == self.board.current_player or winner == EMPTY: # if current player won or there was a draw. EMPTY means there was a draw
-            print("current player in solve is ", self.board.current_player)
-            if winner == EMPTY:
-                self.respond("draw {}".format(best_move_string)) # 
-            elif self.board.current_player == BLACK:
-                self.respond("black {}".format(best_move_string)) #
-            elif self.board.current_player == WHITE:
-                self.respond("white {}".format(best_move_string)) #
-        else: # the opponent won so winner != self.board.current_player or EMPTY
-            self.respond("white")
-
-    def winner(self, board_copy: GoBoard):
-        result1 = board_copy.detect_five_in_a_row()
-        result2 = EMPTY
-        if board_copy.get_captures(BLACK) >= 10:
-            result2 = BLACK
-        elif board_copy.get_captures(WHITE) >= 10:
-            result2 = WHITE
-        
-        if result1 == BLACK or result2 ==  BLACK:
-            return BLACK
-        if result1 == WHITE or result2 == WHITE:
-            return WHITE
+        if value[0] == -10: 
+            if self.board.current_player == WHITE:
+                 self.respond("black {}".format(best_move_string)) 
+            if self.board.current_player == BLACK:
+                 self.respond("white {}".format(best_move_string))
+        elif value[0] == 10:
+            if self.board.current_player == WHITE:
+                 self.respond("white {}".format(best_move_string)) 
+            if self.board.current_player == BLACK:
+                 self.respond("black {}".format(best_move_string))
+        elif value[0] == 0:
+            self.respond("draw {}".format(best_move_string))
         else:
-            return EMPTY
+            self.respond("unknown")
+
+
+        # if self.timelimit_cmd == False: # if timelimit exceeded
+        #     self.respond("unknown")
+        # elif winner == self.board.current_player or winner == EMPTY: # if current player won or there was a draw. EMPTY means there was a draw
+        #     print("current player in solve is ", self.board.current_player)
+        #     if winner == EMPTY:
+        #         self.respond("draw {}".format(best_move_string)) # 
+        #     elif self.board.current_player == BLACK:
+        #         self.respond("black {}".format(best_move_string)) #
+        #     elif self.board.current_player == WHITE:
+        #         self.respond("white {}".format(best_move_string)) #
+        # else: # the opponent won so winner != self.board.current_player or EMPTY
+        #     self.respond("white")
+
+    
         
     # use alphabeta algorithm to simulate to find winner
     #def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
     def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
         #print("player and inital alpha beta ", current_player, alpha, beta)
-        
-        undoMoves_dict = board_copy.undoMoves_dict
+
         #if depth == 0 or self.game_over(board_copy):
-        if self.game_over(board_copy):
-            print("alphabeta game over")
+        if self.game_over(board_copy) or (time.process_time()-self.time_start) >= self.max_time:
             #print(self.staticEvaluation(board_copy, current_player))
             #print("current best move is ", board_copy.best_move)
             print("EOF",self.staticEvaluation(board_copy, current_player))
@@ -501,62 +491,34 @@ class GtpConnection:
         
 
         board_copy.ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
-
-        #print("empty points ", moves)
-        #print("empty points with heuristic eval ", moves_dict)
         print("ordered empty points according to heuristic ", board_copy.ordered_moves_dict)
-        #print("ordered moves ", board_copy.ordered_moves_dict)
-        # print("new board moves played ", new_board.moves_played)
         for move in board_copy.ordered_moves_dict:
             new_board = copy.deepcopy(board_copy)
 
             if depth == 0:
                 print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
 
-            #for move in moves_dict:
-            #rint("ordered empty points according to heuristic in alphabeta lopp ", board_copy.ordered_moves_dict)
-            #print("empty points in loop ", moves)
             new_board.simulate_move(move, current_player)
 
-            #print("simulate move {} for player {}:".format(move, board_copy.current_player))
             print(self.showcopy_cmd(board_copy))
-            #print("undo moves dict ", undoMoves_dict)
-            #value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
             value = -self.run_alphaBeta(new_board, depth+1, -beta, -alpha, opponent(new_board.current_player))
             print("VALUE",value)
+
             if depth ==0:
                 print("############################ ", value)
-            #print("value ", value)
-            #print("move and value is ", move, value)
-            #print("player and current alpha beta ", current_player, alpha, beta)
         
             if value > alpha:
-                #board_copy.best_move = [move, alpha]
                 alpha = value
                 self.board.best_move = move
-                #print("best move in alpha ", board_copy.best_move)
-            #     print("hello")
-            #     print("value and move in alpha is ", move, value)
-            #     print("alphabeta window, alpha, beta ", alpha, beta)
-            # print("undo move {} for player {}:".format(move, board_copy.current_player))
-            # new_board.undoMove(new_board.current_player) # pass color of current player
-            # print("undo!")
             print(self.showcopy_cmd(new_board))
-            #print("undo moves dict after undoMove fuct ", undoMoves_dict)
             if value >= beta:                
-                # print("value and move in beta is ", move, value)
-                # print("alphabeta window, alpha, beta ", alpha, beta)
                 print("ret",beta)
 
                 if depth == 0:
                     print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
                     return beta, move
-                # board_copy.best_move = [move, beta]
-                #print("best move in beta ", board_copy.best_move)
                 return beta
             
-       
-        #print("returnalpha {} beta {}".format(alpha, beta))
         print("ret",alpha)
 
         if depth == 0:
@@ -565,29 +527,17 @@ class GtpConnection:
         return alpha
 
     def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
-    #def staticEvaluation(self, state: GoBoard) -> int:
-        #empty_points = state.get_empty_points()
-        #print("static ")
-        #print(self.showcopy_cmd(state))
-
         win_color = self.winner(state)
         print("win color in static ", win_color)
 
-        #assert win_color != current_player
-        #assertion_question = assert (win_color != current_player)
-        #print()
         if win_color == current_player and win_color != EMPTY:
-            #print("opponent is ", opponent(current_player))
-            return -1000
+            return -10
         elif win_color == EMPTY:
             if self.game_over(state): 
-                #print("game over")
                 return 0
-            else: 
-                #print("game not over")
-                return 1
+            else:
+                return -1
         else: 
-            #print("game won")
             return 10
 
     def move_dict(self, board_copy: GoBoard):
