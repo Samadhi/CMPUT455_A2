@@ -53,8 +53,9 @@ class GoBoard(object):
         self.black_captures = 0
         self.white_captures = 0
         self.undoMoves_dict = dict() # for undo
+        self.moves_to_be_played_dict = dict()
         self.ordered_moves_dict = dict()
-        self.best_move = []
+        self.best_move = None
 
     def add_two_captures(self, color: GO_COLOR) -> None:
         if color == BLACK:
@@ -349,30 +350,35 @@ class GoBoard(object):
     
     def simulate_move(self, point: GO_POINT, color: GO_COLOR):
         self.board[point] = color
-        self.current_player = opponent(color)
+        #self.current_player = opponent(color)
         self.last2_move = self.last_move
         self.last_move = point
+        print("move just played ", point)
+        #print("current player {} and they moved to {}".format(color, point))
+
         O = opponent(color)
-        self.moves_played.append(point) # keeps track of moves for undo
         self.undoMoves_dict[point] = 1 # changes the dict point to full because have placed a stone
         offsets = [1, -1, self.NS, -self.NS, self.NS+1, -(self.NS+1), self.NS-1, -self.NS+1]
         for offset in offsets:
             if self.board[point+offset] == O and self.board[point+(offset*2)] == O and self.board[point+(offset*3)] == color:
                 self.board[point+offset] = EMPTY
                 self.board[point+(offset*2)] = EMPTY
+                # add  point caputred to moves played
+                self.moves_played.append(point+offset)
+                self.moves_played.append(point+(offset*2))
                 # update the undo_moves dictionary to show that the stones have been captures
                 # so will change it from full to empty
                 self.undoMoves_dict[(point+offset)] = -1 
                 self.undoMoves_dict[(point+(offset*2))] = -1
-                # add  point caputred to moves played
-                self.moves_played.append(point+offset)
-                self.moves_played.append(point+(offset*2))
                 self.captured_points.append(point+offset)
                 self.captured_points.append(point+(offset*2))
+                #print("undo dict after a capture ", self.undoMoves_dict)
                 if color == BLACK:
                     self.black_captures += 2
                 else:
                     self.white_captures += 2
+        self.moves_played.append(point) # keeps track of moves for undo
+        print("moves that have been played ", self.moves_played)
 
     def undoMove(self, color: GO_COLOR):
         # if there is a stone change to empty
@@ -380,21 +386,42 @@ class GoBoard(object):
         # need dictionary for moves and if they are full or not
         # if they are full == 1, if they have been captured == -1
         # if stone was already there == 0, if position is an empty point == -10
+        #print("moves that have been played ", self.moves_played)
+        #print("moves that have been captured ", self.captured_points)
         location = self.moves_played.pop()
+        #print("move that is being undone ", location)
         
         if (location, 1) in self.undoMoves_dict.items(): # if position has a stone, change it to empty
             if location in self.captured_points:
-                self.captured_points.remove(location)
+                #self.captured_points.remove(location)
                 self.undoMoves_dict[location] = -1
             else:
                 self.undoMoves_dict[location] = -10
+                #print("in else in undo move ", location, -1)
+                if (len(self.moves_played) > 0) and ((self.moves_played[-1], -1) in self.undoMoves_dict.items()): # if the position was previously captured, now change it to full
+                    #print("print i ", self.moves_played[-1])
+                    #print("print j ", self.undoMoves_dict[self.moves_played[-1]])
+                    while (len(self.moves_played) > 0) and (self.undoMoves_dict[self.moves_played[-1]] == -1):
+                        #print("print k ", self.moves_played)
+                        if color == BLACK:
+                            self.white_captures -=1 
+                        if color == WHITE:
+                            self.black_captures -= 1
+                        move_not_caputured_anymore = self.moves_played.pop()
+                        self.captured_points.remove(move_not_caputured_anymore)
+                        self.undoMoves_dict[move_not_caputured_anymore] = 1
+                        self.board[move_not_caputured_anymore] = color
+                        #location = self.moves_played.pop()
         
-        elif (location, -1) in self.undoMoves_dict.items(): # if the position was previously captured, now change it to full
-            while (self.undoMoves_dict[location] == -1):
-                self.undoMoves_dict[location] = 1
-                self.board[location] = color
-                location = self.moves_played.pop()
+        # elif (location, -1) in self.undoMoves_dict.items(): # if the position was previously captured, now change it to full
+        #     while (self.undoMoves_dict[location] == -1):
+        #         self.captured_points.remove(location)
+        #         self.undoMoves_dict[location] = 1
+        #         self.board[location] = color
+        #         location = self.moves_played.pop()
         
+        #print("moves played in undo moves ", self.moves_played)
+        #print("undo moves dict after undoMove fuct ", self.undoMoves_dict)
         self.board[location] = EMPTY
         self.current_player= opponent(color)
 

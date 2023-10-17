@@ -14,6 +14,7 @@ import re
 import operator
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
+import copy
 
 from board_base import (
     BLACK,
@@ -309,16 +310,22 @@ class GtpConnection:
         return
     
     def game_over(self, board: GoBoard) -> bool:
+        #print(board.detect_five_in_a_row())
         result1 = board.detect_five_in_a_row()
         result2 = EMPTY
-        if self.board.get_captures(BLACK) >= 10:
+        if board.get_captures(BLACK) >= 10:
             result2 = BLACK
-        elif self.board.get_captures(WHITE) >= 10:
+        elif board.get_captures(WHITE) >= 10:
             result2 = WHITE
-
-        if (result1 != EMPTY) or (result2 != EMPTY) or self.board.get_empty_points().size != 0:
-            return False
-        return True
+        #print("result 1 {} result 2 {}".format(result1, result2))
+        #if (result1 != EMPTY) or (result2 != EMPTY) or len(board.moves_played) == 
+        if (result1 != EMPTY) or (result2 != EMPTY) or board.get_empty_points().size == 0:
+            #print(self.showcopy_cmd(board))
+            #print("empty points ", board.get_empty_points().size)
+            #print(self.showcopy_cmd(board))
+            #print("result is working")
+            return True
+        return False
     
     def winner(self, board_copy: GoBoard):
         result1 = board_copy.detect_five_in_a_row()
@@ -428,8 +435,9 @@ class GtpConnection:
         # If the winner is the opponent or unknown, then do not write any move in your GTP response
         root_board_copy: GoBoard = self.board.copy()
         self.move_dict(root_board_copy)
-        print(self.board.current_player)
-        value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        #print(self.board.current_player)
+        #value = self.run_alphaBeta(root_board_copy, 3, -10000, 10000, self.board.current_player)
+        value = self.run_alphaBeta(root_board_copy, 0, -10000, 10000, self.board.current_player)
         print("print end value ", value)
         #print("end value :", value)
 
@@ -438,13 +446,15 @@ class GtpConnection:
         #self.board.ordered_moves_dict = self.staticEvaluation(root_board_copy, self.board.current_player)
         #best_move = value[0]#list(root_board_copy.ordered_moves_dict.keys())[0] # definitly need to change, rn just returning the first key,value pair --> also returning as 11, not e1
         #first_key = list(student_name.keys())[0]
-        best_move = point_to_coord(root_board_copy.best_move[0], self.board.size)
+        print(value)
+        best_move = point_to_coord(value[1], self.board.size)
         best_move_string = format_point(best_move).lower()
 
 
         if self.timelimit_cmd == False: # if timelimit exceeded
             self.respond("unknown")
         elif winner == self.board.current_player or winner == EMPTY: # if current player won or there was a draw. EMPTY means there was a draw
+            print("current player in solve is ", self.board.current_player)
             if winner == EMPTY:
                 self.respond("draw {}".format(best_move_string)) # 
             elif self.board.current_player == BLACK:
@@ -470,54 +480,120 @@ class GtpConnection:
             return EMPTY
         
     # use alphabeta algorithm to simulate to find winner
+    #def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
     def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
-        if depth == 0 or self.game_over(board_copy):
+        #print("player and inital alpha beta ", current_player, alpha, beta)
+        
+        undoMoves_dict = board_copy.undoMoves_dict
+        #if depth == 0 or self.game_over(board_copy):
+        if self.game_over(board_copy):
+            print("alphabeta game over")
+            #print(self.staticEvaluation(board_copy, current_player))
+            #print("current best move is ", board_copy.best_move)
+            print("EOF",self.staticEvaluation(board_copy, current_player))
             return self.staticEvaluation(board_copy, current_player)
         
         # use heuristic to order moves
         moves = board_copy.get_empty_points()
+        #print("moves to play in loop alphabeta ", moves)
         moves_dict = board_copy.heuristicEvaluation(current_player, moves)
+        #moves_to_be_played_dict = board_copy.moves_to_be_played_dict
+        
 
         board_copy.ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
-        
+
+        #print("empty points ", moves)
+        #print("empty points with heuristic eval ", moves_dict)
+        print("ordered empty points according to heuristic ", board_copy.ordered_moves_dict)
+        #print("ordered moves ", board_copy.ordered_moves_dict)
+        # print("new board moves played ", new_board.moves_played)
         for move in board_copy.ordered_moves_dict:
-            board_copy.simulate_move(move, current_player)
+            new_board = copy.deepcopy(board_copy)
+
+            if depth == 0:
+                print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+
+            #for move in moves_dict:
+            #rint("ordered empty points according to heuristic in alphabeta lopp ", board_copy.ordered_moves_dict)
+            #print("empty points in loop ", moves)
+            new_board.simulate_move(move, current_player)
+
+            #print("simulate move {} for player {}:".format(move, board_copy.current_player))
             print(self.showcopy_cmd(board_copy))
-            value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
-            print("value and move is ", value, move)
+            #print("undo moves dict ", undoMoves_dict)
+            #value = -self.run_alphaBeta(board_copy, depth-1, -beta, -alpha, board_copy.current_player)
+            value = -self.run_alphaBeta(new_board, depth+1, -beta, -alpha, opponent(new_board.current_player))
+            print("VALUE",value)
+            if depth ==0:
+                print("############################ ", value)
+            #print("value ", value)
+            #print("move and value is ", move, value)
+            #print("player and current alpha beta ", current_player, alpha, beta)
         
             if value > alpha:
+                #board_copy.best_move = [move, alpha]
                 alpha = value
-                print("value and move in alpha is ", value, move)
-                print("alphabeta window, alpha, beta ", alpha, beta)
-            board_copy.undoMove(board_copy.current_player) # pass color of current player
-            print(self.showcopy_cmd(board_copy))
+                self.board.best_move = move
+                #print("best move in alpha ", board_copy.best_move)
+            #     print("hello")
+            #     print("value and move in alpha is ", move, value)
+            #     print("alphabeta window, alpha, beta ", alpha, beta)
+            # print("undo move {} for player {}:".format(move, board_copy.current_player))
+            # new_board.undoMove(new_board.current_player) # pass color of current player
+            # print("undo!")
+            print(self.showcopy_cmd(new_board))
+            #print("undo moves dict after undoMove fuct ", undoMoves_dict)
             if value >= beta:                
-                print("value and move in beta is ", value, move)
-                print("alphabeta window, alpha, beta ", alpha, beta)
-                board_copy.best_move = [move, beta]
+                # print("value and move in beta is ", move, value)
+                # print("alphabeta window, alpha, beta ", alpha, beta)
+                print("ret",beta)
+
+                if depth == 0:
+                    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+                    return beta, move
+                # board_copy.best_move = [move, beta]
+                #print("best move in beta ", board_copy.best_move)
                 return beta
             
-        board_copy.best_move = [move, alpha]
-            
+       
+        #print("returnalpha {} beta {}".format(alpha, beta))
+        print("ret",alpha)
+
+        if depth == 0:
+            print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
+            return alpha, self.board.best_move
         return alpha
 
     def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
+    #def staticEvaluation(self, state: GoBoard) -> int:
         #empty_points = state.get_empty_points()
+        #print("static ")
+        #print(self.showcopy_cmd(state))
 
         win_color = self.winner(state)
+        print("win color in static ", win_color)
 
         #assert win_color != current_player
-        if win_color == EMPTY:
+        #assertion_question = assert (win_color != current_player)
+        #print()
+        if win_color == current_player and win_color != EMPTY:
+            #print("opponent is ", opponent(current_player))
+            return -1000
+        elif win_color == EMPTY:
             if self.game_over(state): 
-                print("game over") 
+                #print("game over")
                 return 0
-            else: return 1
+            else: 
+                #print("game not over")
+                return 1
         else: 
-            return -10
+            #print("game won")
+            return 10
 
     def move_dict(self, board_copy: GoBoard):
         undoMoves_dict = board_copy.undoMoves_dict
+        moves_to_be_played_dict = board_copy.moves_to_be_played_dict
+        
         '''
         undoMoves_dict[where1d(self.board == EMPTY)] = -10 # all empty points
         undoMoves_dict[where1d(self.board == BLACK)] = 1 # all points with stones
@@ -531,6 +607,7 @@ class GtpConnection:
 
         for empty_points in empty_points_arr: # assign all positions to a empty flag
             undoMoves_dict[empty_points] = [-10]
+            moves_to_be_played_dict[empty_points] = None
         for stones in stones_arr: # assign all positoins to a full flag
             undoMoves_dict[stones] = [1]
         
