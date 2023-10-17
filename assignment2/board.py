@@ -350,11 +350,8 @@ class GoBoard(object):
     
     def simulate_move(self, point: GO_POINT, color: GO_COLOR):
         self.board[point] = color
-        #self.current_player = opponent(color)
         self.last2_move = self.last_move
         self.last_move = point
-        print("move just played ", point)
-        #print("current player {} and they moved to {}".format(color, point))
 
         O = opponent(color)
         self.undoMoves_dict[point] = 1 # changes the dict point to full because have placed a stone
@@ -372,13 +369,11 @@ class GoBoard(object):
                 self.undoMoves_dict[(point+(offset*2))] = -1
                 self.captured_points.append(point+offset)
                 self.captured_points.append(point+(offset*2))
-                #print("undo dict after a capture ", self.undoMoves_dict)
                 if color == BLACK:
                     self.black_captures += 2
                 else:
                     self.white_captures += 2
         self.moves_played.append(point) # keeps track of moves for undo
-        print("moves that have been played ", self.moves_played)
 
     def undoMove(self, color: GO_COLOR):
         # if there is a stone change to empty
@@ -397,12 +392,8 @@ class GoBoard(object):
                 self.undoMoves_dict[location] = -1
             else:
                 self.undoMoves_dict[location] = -10
-                #print("in else in undo move ", location, -1)
                 if (len(self.moves_played) > 0) and ((self.moves_played[-1], -1) in self.undoMoves_dict.items()): # if the position was previously captured, now change it to full
-                    #print("print i ", self.moves_played[-1])
-                    #print("print j ", self.undoMoves_dict[self.moves_played[-1]])
                     while (len(self.moves_played) > 0) and (self.undoMoves_dict[self.moves_played[-1]] == -1):
-                        #print("print k ", self.moves_played)
                         if color == BLACK:
                             self.white_captures -=1 
                         if color == WHITE:
@@ -420,8 +411,6 @@ class GoBoard(object):
         #         self.board[location] = color
         #         location = self.moves_played.pop()
         
-        #print("moves played in undo moves ", self.moves_played)
-        #print("undo moves dict after undoMove fuct ", self.undoMoves_dict)
         self.board[location] = EMPTY
         self.current_player= opponent(color)
 

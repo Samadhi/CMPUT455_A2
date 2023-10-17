@@ -313,7 +313,6 @@ class GtpConnection:
         return
     
     def game_over(self, board: GoBoard) -> bool:
-        #print(board.detect_five_in_a_row())
         result1 = board.detect_five_in_a_row()
         result2 = EMPTY
         if board.get_captures(BLACK) >= 10:
@@ -435,7 +434,6 @@ class GtpConnection:
         root_board_copy: GoBoard = copy.deepcopy(self.board)
         self.move_dict(root_board_copy)
         value = self.run_alphaBeta(root_board_copy, 0, -10000, 10000, self.board.current_player)
-        print("print end value ", value)
 
         best_move = point_to_coord(value[1], self.board.size)
         best_move_string = format_point(best_move).lower()
@@ -474,61 +472,37 @@ class GtpConnection:
     # use alphabeta algorithm to simulate to find winner
     #def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
     def run_alphaBeta(self, board_copy: GoBoard, depth: int, alpha: int, beta: int, current_player: GO_COLOR):
-        #print("player and inital alpha beta ", current_player, alpha, beta)
 
         #if depth == 0 or self.game_over(board_copy):
         if self.game_over(board_copy) or (time.process_time()-self.time_start) >= self.max_time:
-            #print(self.staticEvaluation(board_copy, current_player))
-            #print("current best move is ", board_copy.best_move)
-            print("EOF",self.staticEvaluation(board_copy, current_player))
             return self.staticEvaluation(board_copy, current_player)
         
         # use heuristic to order moves
         moves = board_copy.get_empty_points()
-        #print("moves to play in loop alphabeta ", moves)
         moves_dict = board_copy.heuristicEvaluation(current_player, moves)
         #moves_to_be_played_dict = board_copy.moves_to_be_played_dict
         
-
         board_copy.ordered_moves_dict = dict(sorted(moves_dict.items(),key=operator.itemgetter(1), reverse=(True)))
-        print("ordered empty points according to heuristic ", board_copy.ordered_moves_dict)
         for move in board_copy.ordered_moves_dict:
             new_board = copy.deepcopy(board_copy)
 
-            if depth == 0:
-                print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
-
             new_board.simulate_move(move, current_player)
-
-            print(self.showcopy_cmd(board_copy))
             value = -self.run_alphaBeta(new_board, depth+1, -beta, -alpha, opponent(new_board.current_player))
-            print("VALUE",value)
-
-            if depth ==0:
-                print("############################ ", value)
         
             if value > alpha:
                 alpha = value
                 self.board.best_move = move
-            print(self.showcopy_cmd(new_board))
-            if value >= beta:                
-                print("ret",beta)
-
+            if value >= beta:          
                 if depth == 0:
-                    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
                     return beta, move
                 return beta
-            
-        print("ret",alpha)
 
         if depth == 0:
-            print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
             return alpha, self.board.best_move
         return alpha
 
     def staticEvaluation(self, state: GoBoard, current_player: GO_COLOR) -> int:
         win_color = self.winner(state)
-        print("win color in static ", win_color)
 
         if win_color == current_player and win_color != EMPTY:
             return -10
