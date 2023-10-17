@@ -398,27 +398,53 @@ class GtpConnection:
         """
         board_color = args[0].lower()
         color = color_to_int(board_color)
-        result1 = self.board.detect_five_in_a_row()
-        result2 = EMPTY
-        if self.board.get_captures(opponent(color)) >= 10:
-            result2 = opponent(color)
-        if result1 == opponent(color) or result2 == opponent(color):
-            self.respond("resign")
-            return
-        legal_moves = self.board.get_empty_points()
-        if legal_moves.size == 0:
-            self.respond("pass")
-            return
-        rng = np.random.default_rng()
-        choice = rng.choice(len(legal_moves))
-        move = legal_moves[choice]
-        move_coord = point_to_coord(move, self.board.size)
-        move_as_string = format_point(move_coord)
-        self.play_cmd([board_color, move_as_string, 'print_move'])
+        result = "unknown"
+
+        if not self.game_over(self.board):
+            result = self.solve()
+
+        if result == "unknown" or result[0] == opponent:
+            legal_moves = self.board.get_empty_points()
+            rng = np.random.default_rng()
+            choice = rng.choice(len(legal_moves))
+            self.board.best_move = legal_moves[choice]
+        elif result[0] == color:
+            self.board.best_move = result[1]
+        # rng = np.random.default_rng()
+        # choice = rng.choice(len(legal_moves))
+        # move = legal_moves[choice]
+        # move_coord = point_to_coord(move, self.board.size)
+        # move_as_string = format_point(move_coord)]
+        
+        self.play_cmd([board_color, self.board.best_move, 'print_move'])
     
     def timelimit_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
         self.max_time = int(args[0])
+
+    def solve(self):
+        self.time_start = time.process_time()
+
+        root_board_copy: GoBoard = copy.deepcopy(self.board)
+        self.move_dict(root_board_copy)
+        value = self.run_alphaBeta(root_board_copy, 0, -10000, 10000, self.board.current_player)
+        best_move = point_to_coord(value[1], self.board.size)
+        best_move_string = format_point(best_move).lower()
+
+        if value[0] == -10: 
+            if self.board.current_player == WHITE:
+                 return BLACK, best_move_string
+            if self.board.current_player == BLACK:
+                 return WHITE, best_move_string
+        elif value[0] == 10:
+            if self.board.current_player == WHITE:
+                 return WHITE, best_move_string
+            if self.board.current_player == BLACK:
+                 return BLACK, best_move_string
+        elif value[0] == 0:
+            return EMPTY, best_move_string
+        else:
+            return "unknown"
 
     def solve_cmd(self, args: List[str]) -> None:
         """ Implement this function for Assignment 2 """
