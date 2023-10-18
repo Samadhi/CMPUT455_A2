@@ -437,7 +437,6 @@ class GtpConnection:
         '''
     def solve(self):
         self.time_start = time.process_time()
-        print(self.time_start)
 
         root_board_copy: GoBoard = copy.deepcopy(self.board)
         self.move_dict(root_board_copy)
