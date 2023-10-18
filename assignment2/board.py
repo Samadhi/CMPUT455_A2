@@ -147,6 +147,10 @@ class GoBoard(object):
         self.white_captures = 0
         self.moves_played = [] # put in for solve
         self.captured_points =[] # for solve
+        #self.undoMoves_dict = dict() # for undo
+        #self.moves_to_be_played_dict = dict()
+        #self.ordered_moves_dict = dict()
+        #self.best_move = None
 
     def copy(self) -> 'GoBoard':
         b = GoBoard(self.size)
